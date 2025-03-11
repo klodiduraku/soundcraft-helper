@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import TextToSpeechForm from "@/components/TextToSpeechForm";
 
 const Index = () => {
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState("sk_2d323ace39650294a472fa8f58d750a33890fb943340228f");
 
   // Load API key from localStorage on component mount
   useEffect(() => {
