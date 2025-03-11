@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import TextToSpeechForm from "@/components/TextToSpeechForm";
+import { getElevenLabsApiKey } from "@/lib/environment";
 
 const Index = () => {
-  const [apiKey, setApiKey] = useState("sk_2d323ace39650294a472fa8f58d750a33890fb943340228f");
+  const [apiKey, setApiKey] = useState(getElevenLabsApiKey());
 
   // Load API key from localStorage on component mount
   useEffect(() => {
