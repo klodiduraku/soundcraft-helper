@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/fb0f3d6e-1492-464f-a390-f77f0b88174b
+**URL**: https://soundcraft-helper.vercel.app
 
 ## How can I edit this code?
 
