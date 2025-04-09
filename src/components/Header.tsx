@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Settings, Info, Moon, Sun } from "lucide-react";
+import { Settings, Info, Moon, Sun, Sparkles } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 
 interface HeaderProps {
@@ -15,10 +15,19 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
   const [localApiKey, setLocalApiKey] = useState(apiKey);
   const [isOpen, setIsOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setLocalApiKey(apiKey);
   }, [apiKey]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleSave = () => {
     onApiKeyChange(localApiKey);
@@ -26,10 +35,17 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border py-4">
+    <header className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-lg transition-all duration-300 py-4 ${
+      scrolled ? "bg-background/80 shadow-md" : "bg-transparent"
+    }`}>
       <div className="container max-w-5xl mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <h1 className="text-2xl font-semibold tracking-tight">VoiceForge</h1>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              VoiceForge
+            </span>
+          </h1>
           <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
             by ElevenLabs
           </span>
@@ -41,6 +57,7 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
             size="icon"
             onClick={toggleTheme}
             title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            className="rounded-full hover:bg-accent focus-ring btn-interactive"
           >
             {theme === "light" ? (
               <Moon className="h-4 w-4" />
@@ -52,7 +69,11 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
           
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2 rounded-full hover:bg-accent focus-ring btn-interactive"
+              >
                 <Settings className="h-4 w-4" />
                 <span>API Key</span>
               </Button>
@@ -72,6 +93,7 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
                     onChange={(e) => setLocalApiKey(e.target.value)}
                     placeholder="Enter your ElevenLabs API key"
                     type="password"
+                    className="focus-ring"
                   />
                   <p className="text-xs text-muted-foreground">
                     Get your API key from{" "}
@@ -86,7 +108,7 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
                   </p>
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={handleSave}>Save</Button>
+                  <Button onClick={handleSave} className="btn-interactive">Save</Button>
                 </div>
               </div>
             </DialogContent>
@@ -94,7 +116,11 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full hover:bg-accent focus-ring btn-interactive"
+              >
                 <Info className="h-4 w-4" />
                 <span className="sr-only">About</span>
               </Button>
