@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useElevenLabs } from "@/hooks/useElevenLabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,12 +145,14 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
         </div>
       </div>
       
-      <AudioPlayer 
-        audioUrl={audioUrl} 
-        audioBlob={audioBlob} 
-        isLoading={isLoading} 
-        onReset={resetAudio} 
-      />
+      <div className="audio-player-container" onClick={(e) => e.stopPropagation()}>
+        <AudioPlayer 
+          audioUrl={audioUrl} 
+          audioBlob={audioBlob} 
+          isLoading={isLoading} 
+          onReset={resetAudio} 
+        />
+      </div>
       
       <div className="flex space-x-3">
         <Button

@@ -69,7 +69,11 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
     }
   }, []);
 
-  const togglePlayPause = () => {
+  const togglePlayPause = (e: React.MouseEvent) => {
+    // Prevent event bubbling to parent elements
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
@@ -92,7 +96,11 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = (e: React.MouseEvent) => {
+    // Prevent event bubbling
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (audioBlob) {
       const url = window.URL.createObjectURL(audioBlob);
       const a = document.createElement("a");
@@ -105,7 +113,11 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
     }
   };
 
-  const resetPlayer = () => {
+  const resetPlayer = (e: React.MouseEvent) => {
+    // Prevent event bubbling
+    e.preventDefault();
+    e.stopPropagation();
+    
     setIsPlaying(false);
     setCurrentTime(0);
     if (audioRef.current) {
@@ -162,6 +174,7 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
               size="icon"
               disabled={!isAudioAvailable}
               onClick={togglePlayPause}
+              type="button"
             >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
@@ -171,6 +184,7 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
               size="icon"
               disabled={!isAudioAvailable}
               onClick={resetPlayer}
+              type="button"
             >
               <RotateCcw className="h-4 w-4" />
             </Button>
@@ -180,6 +194,7 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
               size="icon"
               disabled={!isAudioAvailable || !audioBlob}
               onClick={handleDownload}
+              type="button"
             >
               <Download className="h-4 w-4" />
             </Button>
