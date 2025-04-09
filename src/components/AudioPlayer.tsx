@@ -17,6 +17,17 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Reset state when audio URL changes
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    
+    // If we have a new audio URL, update duration once it's loaded
+    if (audioRef.current) {
+      audioRef.current.load();
+    }
+  }, [audioUrl]);
+
   useEffect(() => {
     if (audioRef.current) {
       const audio = audioRef.current;
@@ -33,27 +44,43 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
         setIsPlaying(false);
         setCurrentTime(0);
       };
+
+      const handlePlay = () => {
+        setIsPlaying(true);
+      };
+
+      const handlePause = () => {
+        setIsPlaying(false);
+      };
       
       audio.addEventListener("timeupdate", updateTime);
       audio.addEventListener("loadedmetadata", updateDuration);
       audio.addEventListener("ended", handleEnded);
+      audio.addEventListener("play", handlePlay);
+      audio.addEventListener("pause", handlePause);
       
       return () => {
         audio.removeEventListener("timeupdate", updateTime);
         audio.removeEventListener("loadedmetadata", updateDuration);
         audio.removeEventListener("ended", handleEnded);
+        audio.removeEventListener("play", handlePlay);
+        audio.removeEventListener("pause", handlePause);
       };
     }
-  }, [audioUrl]);
+  }, []);
 
   const togglePlayPause = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        // Ensure we're at the right position if manually seeking
+        if (audioRef.current.readyState > 0) {
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio:", error);
+          });
+        }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -81,6 +108,10 @@ const AudioPlayer = ({ audioUrl, audioBlob, onReset, isLoading = false }: AudioP
   const resetPlayer = () => {
     setIsPlaying(false);
     setCurrentTime(0);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     if (onReset) onReset();
   };
 

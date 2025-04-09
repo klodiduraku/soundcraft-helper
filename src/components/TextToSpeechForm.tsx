@@ -144,7 +144,12 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
         </div>
       </div>
       
-      <AudioPlayer audioUrl={audioUrl} audioBlob={audioBlob} isLoading={isLoading} onReset={resetAudio} />
+      <AudioPlayer 
+        audioUrl={audioUrl} 
+        audioBlob={audioBlob} 
+        isLoading={isLoading} 
+        onReset={resetAudio} 
+      />
       
       <div className="flex space-x-3">
         <Button
