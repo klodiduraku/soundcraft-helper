@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Settings, Info } from "lucide-react";
+import { Settings, Info, Moon, Sun } from "lucide-react";
+import { useTheme } from "./ThemeProvider";
 
 interface HeaderProps {
   apiKey: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
   const [localApiKey, setLocalApiKey] = useState(apiKey);
   const [isOpen, setIsOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     setLocalApiKey(apiKey);
@@ -34,6 +36,20 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
         </div>
         
         <div className="flex items-center space-x-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            {theme === "light" ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4" />
+            )}
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+          
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useElevenLabs } from "@/hooks/useElevenLabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,12 @@ interface TextToSpeechFormProps {
   apiKey: string;
 }
 
+interface UserSubscription {
+  characterCount: number;
+  characterLimit: number;
+  nextCharacterReset: string;
+}
+
 const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
   const [text, setText] = useState("");
   const [voiceId, setVoiceId] = useState(DEFAULT_VOICE);
@@ -30,8 +36,45 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
   const [stability, setStability] = useState(DEFAULT_STABILITY);
   const [similarityBoost, setSimilarityBoost] = useState(DEFAULT_SIMILARITY_BOOST);
   const [speakerBoost, setSpeakerBoost] = useState(DEFAULT_SPEAKER_BOOST);
+  const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   
-  const { isLoading, audioUrl, audioBlob, generateSpeech, resetAudio, isValidApiKey, checkApiKey } = useElevenLabs({ apiKey });
+  const { 
+    isLoading, 
+    audioUrl, 
+    audioBlob, 
+    generateSpeech, 
+    resetAudio, 
+    isValidApiKey, 
+    checkApiKey 
+  } = useElevenLabs({ apiKey });
+
+  // Fetch user subscription when API key changes
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!apiKey) return;
+      
+      try {
+        const response = await fetch("https://api.elevenlabs.io/v1/user/subscription", {
+          headers: {
+            "xi-api-key": apiKey,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUserSubscription({
+            characterCount: data.character_count,
+            characterLimit: data.character_limit,
+            nextCharacterReset: data.next_character_reset_unix,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching subscription data:", error);
+      }
+    };
+    
+    fetchSubscription();
+  }, [apiKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +104,18 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
     resetAudio();
   };
   
+  const getRemainingCredits = () => {
+    if (!userSubscription) return null;
+    
+    const used = userSubscription.characterCount;
+    const total = userSubscription.characterLimit;
+    const remaining = total - used;
+    
+    return { used, total, remaining };
+  };
+  
+  const credits = getRemainingCredits();
+  
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
@@ -76,9 +131,16 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
           <span>
             {text.length > 0 ? `${text.length} characters` : "Enter your text"}
           </span>
-          <span>
-            Max: {MAX_TEXT_LENGTH} characters
-          </span>
+          <div className="flex space-x-4">
+            <span>
+              Max: {MAX_TEXT_LENGTH} characters
+            </span>
+            {credits && (
+              <span className="text-primary">
+                Remaining: {credits.remaining.toLocaleString()} / {credits.total.toLocaleString()} credits
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
