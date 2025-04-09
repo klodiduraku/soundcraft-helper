@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useElevenLabs } from "@/hooks/useElevenLabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +30,7 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
   const [similarityBoost, setSimilarityBoost] = useState(DEFAULT_SIMILARITY_BOOST);
   const [speakerBoost, setSpeakerBoost] = useState(DEFAULT_SPEAKER_BOOST);
   
-  const { isLoading, audioUrl, generateSpeech, resetAudio, isValidApiKey, checkApiKey } = useElevenLabs({ apiKey });
+  const { isLoading, audioUrl, audioBlob, generateSpeech, resetAudio, isValidApiKey, checkApiKey } = useElevenLabs({ apiKey });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,7 +144,7 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
         </div>
       </div>
       
-      <AudioPlayer audioUrl={audioUrl} />
+      <AudioPlayer audioUrl={audioUrl} audioBlob={audioBlob} isLoading={isLoading} onReset={resetAudio} />
       
       <div className="flex space-x-3">
         <Button
