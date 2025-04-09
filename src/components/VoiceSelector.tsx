@@ -2,15 +2,25 @@
 import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ELEVEN_LABS_VOICES, ELEVEN_LABS_MODELS, Voice } from "@/lib/constants";
+import { ELEVEN_LABS_MODELS } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { getVoices } from "@/lib/elevenlabs";
+import { Loader2 } from "lucide-react";
+
+interface Voice {
+  voice_id: string;
+  name: string;
+  labels: Record<string, string>;
+  category?: string;
+}
 
 interface VoiceSelectorProps {
   selectedVoiceId: string;
   selectedModelId: string;
   onVoiceChange: (voiceId: string) => void;
   onModelChange: (modelId: string) => void;
+  apiKey: string;
 }
 
 const VoiceSelector = ({
@@ -18,20 +28,45 @@ const VoiceSelector = ({
   selectedModelId,
   onVoiceChange,
   onModelChange,
+  apiKey,
 }: VoiceSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredVoices, setFilteredVoices] = useState<Voice[]>(ELEVEN_LABS_VOICES);
+  const [filteredVoices, setFilteredVoices] = useState<Voice[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [voices, setVoices] = useState<Voice[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let filtered = ELEVEN_LABS_VOICES;
+    const fetchVoices = async () => {
+      if (!apiKey) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const fetchedVoices = await getVoices(apiKey);
+        setVoices(fetchedVoices);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error fetching voices:", err);
+        setError("Failed to load voices. Please check your API key.");
+        setIsLoading(false);
+      }
+    };
+    
+    fetchVoices();
+  }, [apiKey]);
+
+  useEffect(() => {
+    let filtered = voices;
     
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(voice => 
         voice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        Object.values(voice.labels).some(value => 
-          value.toLowerCase().includes(searchTerm.toLowerCase())
+        Object.values(voice.labels || {}).some(value => 
+          typeof value === 'string' && value.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
     }
@@ -40,14 +75,14 @@ const VoiceSelector = ({
     if (selectedFilter !== "all") {
       filtered = filtered.filter(voice => {
         if (selectedFilter === "male" || selectedFilter === "female" || selectedFilter === "neutral") {
-          return voice.labels.gender?.toLowerCase() === selectedFilter;
+          return voice.labels?.gender?.toLowerCase() === selectedFilter;
         }
-        return voice.labels.accent?.toLowerCase() === selectedFilter;
+        return voice.labels?.accent?.toLowerCase() === selectedFilter;
       });
     }
     
     setFilteredVoices(filtered);
-  }, [searchTerm, selectedFilter]);
+  }, [searchTerm, selectedFilter, voices]);
 
   return (
     <div className="space-y-4 animate-slide-up">
@@ -102,49 +137,65 @@ const VoiceSelector = ({
           </Tabs>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-1">
-          {filteredVoices.map((voice) => (
-            <div
-              key={voice.id}
-              onClick={() => onVoiceChange(voice.id)}
-              className={`
-                p-3 rounded-lg border cursor-pointer transition-all duration-200
-                ${selectedVoiceId === voice.id 
-                  ? "border-primary bg-primary/5 shadow-sm" 
-                  : "border-border hover:border-primary/50 hover:bg-secondary"
-                }
-              `}
-            >
-              <div className="flex flex-col space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{voice.name}</span>
-                  {selectedVoiceId === voice.id && (
-                    <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] h-5">
-                      Selected
-                    </Badge>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading voices...</span>
+          </div>
+        ) : error ? (
+          <div className="p-6 text-center border border-destructive/20 bg-destructive/5 rounded-lg">
+            <p className="text-destructive">{error}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Please check that your API key is valid and try again.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-1">
+            {filteredVoices.length > 0 ? filteredVoices.map((voice) => (
+              <div
+                key={voice.voice_id}
+                onClick={() => onVoiceChange(voice.voice_id)}
+                className={`
+                  p-3 rounded-lg border cursor-pointer transition-all duration-200
+                  ${selectedVoiceId === voice.voice_id 
+                    ? "border-primary bg-primary/5 shadow-sm" 
+                    : "border-border hover:border-primary/50 hover:bg-secondary"
+                  }
+                `}
+              >
+                <div className="flex flex-col space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{voice.name}</span>
+                    {selectedVoiceId === voice.voice_id && (
+                      <Badge variant="outline" className="bg-primary/10 text-primary text-[10px] h-5">
+                        Selected
+                      </Badge>
+                    )}
+                  </div>
+                  {voice.labels && Object.keys(voice.labels).length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {Object.entries(voice.labels).map(([key, value]) => (
+                        typeof value === 'string' && (
+                          <Badge 
+                            key={`${voice.voice_id}-${key}`} 
+                            variant="secondary"
+                            className="text-[10px] h-5"
+                          >
+                            {value}
+                          </Badge>
+                        )
+                      ))}
+                    </div>
                   )}
                 </div>
-                <div className="flex gap-1 flex-wrap">
-                  {Object.entries(voice.labels).map(([key, value]) => (
-                    <Badge 
-                      key={`${voice.id}-${key}`} 
-                      variant="secondary"
-                      className="text-[10px] h-5"
-                    >
-                      {value}
-                    </Badge>
-                  ))}
-                </div>
               </div>
-            </div>
-          ))}
-          
-          {filteredVoices.length === 0 && (
-            <div className="col-span-full p-6 text-center text-muted-foreground">
-              No voices found matching your criteria.
-            </div>
-          )}
-        </div>
+            )) : (
+              <div className="col-span-full p-6 text-center text-muted-foreground">
+                No voices found matching your criteria.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

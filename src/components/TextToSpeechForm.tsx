@@ -1,18 +1,19 @@
 
 import { useState } from "react";
+import { useElevenLabs } from "@/hooks/useElevenLabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Mic, Wand2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import VoiceSelector from "./VoiceSelector";
 import AudioPlayer from "./AudioPlayer";
-import { useElevenLabs } from "@/hooks/useElevenLabs";
-import { 
-  DEFAULT_MODEL, 
-  DEFAULT_VOICE, 
-  DEFAULT_STABILITY, 
+import {
+  DEFAULT_MODEL,
+  DEFAULT_VOICE,
+  DEFAULT_STABILITY,
   DEFAULT_SIMILARITY_BOOST,
   DEFAULT_SPEAKER_BOOST,
   MAX_TEXT_LENGTH
@@ -29,19 +30,21 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
   const [stability, setStability] = useState(DEFAULT_STABILITY);
   const [similarityBoost, setSimilarityBoost] = useState(DEFAULT_SIMILARITY_BOOST);
   const [speakerBoost, setSpeakerBoost] = useState(DEFAULT_SPEAKER_BOOST);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
-  const { 
-    isLoading, 
-    audioUrl, 
-    audioBlob, 
-    generateSpeech, 
-    resetAudio 
-  } = useElevenLabs({ apiKey });
+  
+  const { isLoading, audioUrl, generateSpeech, resetAudio, isValidApiKey, checkApiKey } = useElevenLabs({ apiKey });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    
+    if (!text.trim()) {
+      toast.error("Please enter some text to convert to speech");
+      return;
+    }
+    
+    if (text.length > MAX_TEXT_LENGTH) {
+      toast.error(`Text length exceeds maximum of ${MAX_TEXT_LENGTH} characters`);
+      return;
+    }
     
     await generateSpeech({
       text,
@@ -53,128 +56,113 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
     });
   };
 
-  const remainingChars = MAX_TEXT_LENGTH - text.length;
-  const isTextValid = text.trim().length > 0 && remainingChars >= 0;
-
+  const handleReset = () => {
+    setText("");
+    resetAudio();
+  };
+  
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="text" className="text-sm font-medium">Text to Convert</Label>
+        <Label htmlFor="text">Text to convert</Label>
         <Textarea
           id="text"
-          placeholder="Enter text to convert to speech..."
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={6}
-          className="resize-none focus-visible:ring-1 focus-visible:ring-primary"
+          placeholder="Enter text to convert to speech..."
+          className="min-h-32 resize-y"
         />
-        <div className="flex justify-between text-xs">
-          <span>{text.length} / {MAX_TEXT_LENGTH} characters</span>
-          {remainingChars < 0 && (
-            <span className="text-destructive">
-              Exceeded by {Math.abs(remainingChars)} characters
-            </span>
-          )}
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>
+            {text.length > 0 ? `${text.length} characters` : "Enter your text"}
+          </span>
+          <span>
+            Max: {MAX_TEXT_LENGTH} characters
+          </span>
         </div>
       </div>
 
+      {!apiKey && (
+        <div className="p-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 flex items-start space-x-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-yellow-800 dark:text-yellow-400">
+            <p><strong>API Key Required</strong></p>
+            <p>Please set your ElevenLabs API key in the settings.</p>
+          </div>
+        </div>
+      )}
+      
       <VoiceSelector
         selectedVoiceId={voiceId}
         selectedModelId={modelId}
         onVoiceChange={setVoiceId}
         onModelChange={setModelId}
+        apiKey={apiKey}
       />
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Advanced Settings</h3>
-          <Switch
-            checked={showAdvanced}
-            onCheckedChange={setShowAdvanced}
-          />
-        </div>
-        
-        {showAdvanced && (
-          <div className="space-y-4 pt-2 animate-fade-in">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label htmlFor="stability" className="text-sm">Voice Stability: {stability.toFixed(2)}</Label>
-              </div>
-              <Slider
-                id="stability"
-                min={0}
-                max={1}
-                step={0.01}
-                value={[stability]}
-                onValueChange={(values) => setStability(values[0])}
-              />
-              <p className="text-xs text-muted-foreground">
-                Lower values result in more dynamic and varied speech, while higher values make it more consistent.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label htmlFor="similarity" className="text-sm">
-                  Similarity Boost: {similarityBoost.toFixed(2)}
-                </Label>
-              </div>
-              <Slider
-                id="similarity"
-                min={0}
-                max={1}
-                step={0.01}
-                value={[similarityBoost]}
-                onValueChange={(values) => setSimilarityBoost(values[0])}
-              />
-              <p className="text-xs text-muted-foreground">
-                Higher values help preserve the voice character and avoid artifacting.
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="speakerBoost"
-                checked={speakerBoost}
-                onCheckedChange={setSpeakerBoost}
-              />
-              <Label htmlFor="speakerBoost" className="text-sm cursor-pointer">
-                Speaker Boost
-              </Label>
-            </div>
+      
+      <div className="space-y-6 border-t border-b py-6">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label>Stability: {stability.toFixed(2)}</Label>
           </div>
-        )}
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-1/2">
-          <Button
-            type="submit"
-            disabled={!isTextValid || isLoading}
-            className="w-full gap-2 h-12"
-          >
-            {isLoading ? (
-              <>
-                <Mic className="h-4 w-4 animate-pulse" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Wand2 className="h-4 w-4" />
-                Generate Speech
-              </>
-            )}
-          </Button>
+          <Slider
+            value={[stability]}
+            min={0}
+            max={1}
+            step={0.01}
+            onValueChange={(values) => setStability(values[0])}
+          />
+          <p className="text-xs text-muted-foreground">
+            Higher stability makes the voice more consistent but less expressive.
+          </p>
         </div>
         
-        <div className="w-full md:w-1/2">
-          <AudioPlayer 
-            audioUrl={audioUrl} 
-            audioBlob={audioBlob} 
-            onReset={resetAudio}
-            isLoading={isLoading}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label>Similarity Boost: {similarityBoost.toFixed(2)}</Label>
+          </div>
+          <Slider
+            value={[similarityBoost]}
+            min={0}
+            max={1}
+            step={0.01}
+            onValueChange={(values) => setSimilarityBoost(values[0])}
           />
+          <p className="text-xs text-muted-foreground">
+            Higher values make the voice more similar to the original voice.
+          </p>
         </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="speaker-boost"
+            checked={speakerBoost}
+            onCheckedChange={setSpeakerBoost}
+          />
+          <Label htmlFor="speaker-boost" className="cursor-pointer">
+            Speaker Boost
+          </Label>
+        </div>
+      </div>
+      
+      <AudioPlayer audioUrl={audioUrl} />
+      
+      <div className="flex space-x-3">
+        <Button
+          type="submit"
+          disabled={isLoading || !text.trim() || !apiKey}
+          className="flex-1"
+        >
+          {isLoading ? "Generating..." : "Generate Speech"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleReset}
+          disabled={isLoading || !text.trim()}
+        >
+          Reset
+        </Button>
       </div>
     </form>
   );

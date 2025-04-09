@@ -60,7 +60,7 @@ const Header = ({ apiKey, onApiKeyChange }: HeaderProps) => {
                   <p className="text-xs text-muted-foreground">
                     Get your API key from{" "}
                     <a
-                      href="https://elevenlabs.io/app/account/api"
+                      href="https://elevenlabs.io/app/settings/api-keys"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline"
