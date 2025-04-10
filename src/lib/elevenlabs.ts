@@ -7,6 +7,7 @@ export interface TextToSpeechOptions {
   similarityBoost?: number;
   style?: number;
   speakerBoost?: boolean;
+  speed?: number; // Add voice speed parameter
 }
 
 export interface TextToSpeechResponse {
@@ -25,7 +26,8 @@ export const textToSpeech = async (
     stability = 0.5,
     similarityBoost = 0.75,
     style = 0,
-    speakerBoost = true
+    speakerBoost = true,
+    speed = 1.0 // Default speed is 1.0 (normal)
   } = options;
 
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
@@ -45,6 +47,7 @@ export const textToSpeech = async (
         style,
         use_speaker_boost: speakerBoost,
       },
+      speed, // Add voice speed parameter
     }),
   });
 
@@ -90,3 +93,4 @@ export const validateApiKey = async (apiKey: string): Promise<boolean> => {
     return false;
   }
 };
+

@@ -36,6 +36,7 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
   const [stability, setStability] = useState(DEFAULT_STABILITY);
   const [similarityBoost, setSimilarityBoost] = useState(DEFAULT_SIMILARITY_BOOST);
   const [speakerBoost, setSpeakerBoost] = useState(DEFAULT_SPEAKER_BOOST);
+  const [speed, setSpeed] = useState(1.0); // Add voice speed state
   const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
   
   const { 
@@ -95,7 +96,8 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
       modelId,
       stability,
       similarityBoost,
-      speakerBoost
+      speakerBoost,
+      speed // Add voice speed parameter
     });
   };
 
@@ -192,6 +194,23 @@ const TextToSpeechForm = ({ apiKey }: TextToSpeechFormProps) => {
           />
           <p className="text-xs text-muted-foreground">
             Higher values make the voice more similar to the original voice.
+          </p>
+        </div>
+
+        {/* Add voice speed slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label>Voice Speed: {speed.toFixed(2)}x</Label>
+          </div>
+          <Slider
+            value={[speed]}
+            min={0.5}
+            max={2.0}
+            step={0.05}
+            onValueChange={(values) => setSpeed(values[0])}
+          />
+          <p className="text-xs text-muted-foreground">
+            Adjust the speaking rate of the voice (0.5x to 2.0x).
           </p>
         </div>
         

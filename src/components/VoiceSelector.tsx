@@ -6,7 +6,7 @@ import { ELEVEN_LABS_MODELS } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { getVoices } from "@/lib/elevenlabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, VolumeX, Volume2 } from "lucide-react";
 
 interface Voice {
   voice_id: string;
@@ -36,6 +36,9 @@ const VoiceSelector = ({
   const [voices, setVoices] = useState<Voice[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewVoiceId, setPreviewVoiceId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const fetchVoices = async () => {
@@ -76,6 +79,9 @@ const VoiceSelector = ({
       filtered = filtered.filter(voice => {
         if (selectedFilter === "male" || selectedFilter === "female" || selectedFilter === "neutral") {
           return voice.labels?.gender?.toLowerCase() === selectedFilter;
+        } else if (selectedFilter === "other") {
+          return !voice.labels?.gender || 
+            !["male", "female", "neutral"].includes(voice.labels.gender.toLowerCase());
         }
         return voice.labels?.accent?.toLowerCase() === selectedFilter;
       });
@@ -83,6 +89,28 @@ const VoiceSelector = ({
     
     setFilteredVoices(filtered);
   }, [searchTerm, selectedFilter, voices]);
+
+  // Cleanup audio on component unmount
+  useEffect(() => {
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = "";
+      }
+    };
+  }, [audio]);
+
+  const getUniqueAccents = () => {
+    const accents = new Set<string>();
+    voices.forEach(voice => {
+      if (voice.labels?.accent) {
+        accents.add(voice.labels.accent.toLowerCase());
+      }
+    });
+    return Array.from(accents);
+  };
+
+  const uniqueAccents = getUniqueAccents();
 
   return (
     <div className="space-y-4 animate-slide-up">
@@ -128,11 +156,13 @@ const VoiceSelector = ({
             onValueChange={setSelectedFilter}
             className="w-auto"
           >
-            <TabsList className="grid grid-cols-4 h-8 w-auto">
+            <TabsList className="grid grid-cols-6 h-8 w-auto md:w-[450px]">
               <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
               <TabsTrigger value="male" className="text-xs px-2">Male</TabsTrigger>
               <TabsTrigger value="female" className="text-xs px-2">Female</TabsTrigger>
+              <TabsTrigger value="neutral" className="text-xs px-2">Neutral</TabsTrigger>
               <TabsTrigger value="british" className="text-xs px-2">British</TabsTrigger>
+              <TabsTrigger value="other" className="text-xs px-2">Other</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -150,13 +180,13 @@ const VoiceSelector = ({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-[320px] overflow-y-auto pr-1">
             {filteredVoices.length > 0 ? filteredVoices.map((voice) => (
               <div
                 key={voice.voice_id}
                 onClick={() => onVoiceChange(voice.voice_id)}
                 className={`
-                  p-3 rounded-lg border cursor-pointer transition-all duration-200
+                  p-3 rounded-lg border cursor-pointer transition-all duration-200 relative
                   ${selectedVoiceId === voice.voice_id 
                     ? "border-primary bg-primary/5 shadow-sm" 
                     : "border-border hover:border-primary/50 hover:bg-secondary"
@@ -194,6 +224,24 @@ const VoiceSelector = ({
                 No voices found matching your criteria.
               </div>
             )}
+          </div>
+        )}
+        
+        {voices.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {uniqueAccents.length > 0 && uniqueAccents.map(accent => (
+              <Badge 
+                key={accent}
+                onClick={() => setSelectedFilter(accent)}
+                className={`cursor-pointer px-3 py-1 capitalize ${
+                  selectedFilter === accent 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-secondary hover:bg-secondary/80"
+                }`}
+              >
+                {accent}
+              </Badge>
+            ))}
           </div>
         )}
       </div>
